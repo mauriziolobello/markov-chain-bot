@@ -395,9 +395,12 @@ public sealed class MarkovPanelRenderer
 
     private void PositionCanvas()
     {
-        // Positive offsetX/Y = move toward chart center from the selected corner
+        // Corner anchors: positive offsetX/Y = distance from nearest edge toward center.
+        // Center/edge anchors: positive offsetX = right of anchor, positive offsetY = below anchor.
+        // Thickness(left, top, right, bottom)
         switch (_corner)
         {
+            // ── Corners ───────────────────────────────────────────────────
             case PanelCorner.TopLeft:
                 _canvas!.HorizontalAlignment = HorizontalAlignment.Left;
                 _canvas.VerticalAlignment    = VerticalAlignment.Top;
@@ -417,10 +420,47 @@ public sealed class MarkovPanelRenderer
                 break;
 
             case PanelCorner.BottomRight:
-            default:
                 _canvas!.HorizontalAlignment = HorizontalAlignment.Right;
                 _canvas.VerticalAlignment    = VerticalAlignment.Bottom;
                 _canvas.Margin = new Thickness(0, 0, Math.Max(0, _offsetX), Math.Max(0, _offsetY));
+                break;
+
+            // ── Edge centres ──────────────────────────────────────────────
+            case PanelCorner.TopCenter:
+                _canvas!.HorizontalAlignment = HorizontalAlignment.Center;
+                _canvas.VerticalAlignment    = VerticalAlignment.Top;
+                // offsetX shifts right (+) / left (−) from the horizontal centre;
+                // offsetY is distance from the top edge (clamp to 0).
+                _canvas.Margin = new Thickness(_offsetX, Math.Max(0, _offsetY), 0, 0);
+                break;
+
+            case PanelCorner.BottomCenter:
+                _canvas!.HorizontalAlignment = HorizontalAlignment.Center;
+                _canvas.VerticalAlignment    = VerticalAlignment.Bottom;
+                _canvas.Margin = new Thickness(_offsetX, 0, 0, Math.Max(0, _offsetY));
+                break;
+
+            case PanelCorner.MiddleLeft:
+                _canvas!.HorizontalAlignment = HorizontalAlignment.Left;
+                _canvas.VerticalAlignment    = VerticalAlignment.Center;
+                // offsetX is distance from the left edge (clamp to 0);
+                // offsetY shifts down (+) / up (−) from the vertical centre.
+                _canvas.Margin = new Thickness(Math.Max(0, _offsetX), _offsetY, 0, 0);
+                break;
+
+            case PanelCorner.MiddleRight:
+                _canvas!.HorizontalAlignment = HorizontalAlignment.Right;
+                _canvas.VerticalAlignment    = VerticalAlignment.Center;
+                _canvas.Margin = new Thickness(0, _offsetY, Math.Max(0, _offsetX), 0);
+                break;
+
+            // ── Screen centre ─────────────────────────────────────────────
+            case PanelCorner.MiddleCenter:
+            default:
+                _canvas!.HorizontalAlignment = HorizontalAlignment.Center;
+                _canvas.VerticalAlignment    = VerticalAlignment.Center;
+                // Both offsets are signed displacements from the screen centre.
+                _canvas.Margin = new Thickness(_offsetX, _offsetY, 0, 0);
                 break;
         }
     }

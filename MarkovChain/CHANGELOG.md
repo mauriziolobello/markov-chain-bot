@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5 — 2026-05-23
+- **Panel Corner** esteso da 4 a 9 posizioni di ancoraggio (griglia 3×3):
+  TopLeft, TopRight, BottomLeft, BottomRight (invariati) +
+  TopCenter, BottomCenter, MiddleLeft, MiddleRight, MiddleCenter (nuovi).
+  Per le posizioni Center/Middle, PanelOffsetX e PanelOffsetY funzionano
+  come spostamenti con segno (+/−) dal punto di ancoraggio anziché distanza
+  dal bordo. Nessun cambiamento ai valori enum esistenti (0–3).
+
 ## 1.0.4 — 2026-05-23
 - Aggiunto **RegimeBandRenderer**: disegna sul grafico il rettangolo ±Threshold%
   attorno al close di LookbackPeriod giorni fa. Il prezzo corrente dentro il
