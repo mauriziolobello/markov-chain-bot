@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.4 — 2026-05-23
+- Aggiunto **RegimeBandRenderer**: disegna sul grafico il rettangolo ±Threshold%
+  attorno al close di LookbackPeriod giorni fa. Il prezzo corrente dentro il
+  rettangolo → SIDE; sopra la banda superiore → BULL; sotto la banda inferiore → BEAR.
+  Colore: blu (SIDE), verde (BULL), rosso (BEAR). Linea tratteggiata grigia
+  al close di riferimento (anchor neutrale). Il rettangolo si rinnova ad ogni
+  barra daily e viene rimosso allo stop del bot.
+  File: `MarkovChain/UI/RegimeBandRenderer.cs` (nuova classe).
+
 ## 1.0.3 — 2026-05-23
 - Aggiunto parametro **Matrix Bars** (default 200, range 50–2000, gruppo Data):
   la matrice di transizione 3×3 viene costruita solo sulle ultime N barre classificate.

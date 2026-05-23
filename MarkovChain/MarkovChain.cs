@@ -22,6 +22,7 @@ public partial class MarkovChain : Robot
     private SignalGenerator?        _signalGenerator;
     private BacktestAccuracy?       _backtest;
     private MarkovPanelRenderer?    _panel;
+    private RegimeBandRenderer?     _bandRenderer;
 
     // ── Last computed results (refreshed on each daily bar close) ─────────
     private ForecastResult[]? _forecasts;
@@ -55,12 +56,15 @@ public partial class MarkovChain : Robot
         // 5. Initial computation on existing history
         RunAnalysis();
 
-        // 6. Create and populate panel
+        // 6. Create canvas panel and regime band overlay
         _panel = new MarkovPanelRenderer(
             Chart, canDraw, Corner,
             PanelOffsetX, PanelOffsetY,
             TableAlpha, MixAlpha, ForecastDays, _logger);
         _panel.Initialize();
+
+        _bandRenderer = new RegimeBandRenderer(Chart, canDraw, _logger);
+
         UpdatePanel();
 
         // 7. Subscribe to daily bar opened event for future updates
@@ -77,6 +81,7 @@ public partial class MarkovChain : Robot
             _dailyBars.BarOpened -= OnDailyBarOpened;
 
         _panel?.Destroy();
+        _bandRenderer?.Destroy();
         _logger?.Dispose();
     }
 
@@ -169,7 +174,9 @@ public partial class MarkovChain : Robot
               + $"Accuracy={_hitRate:P1}");
     }
 
-    /// <summary>Pushes the latest results to the panel renderer.</summary>
+    /// <summary>
+    /// Pushes the latest results to the panel renderer and redraws the chart band.
+    /// </summary>
     private void UpdatePanel()
     {
         if (_panel is null || _transMatrix is null || _forecasts is null || _signal is null)
@@ -183,6 +190,15 @@ public partial class MarkovChain : Robot
             _signal,
             _hitRate,
             _sampleCount);
+
+        // Redraw the ±Threshold% regime band on the chart.
+        // thresholdFraction converts the whole-number percent param to a fraction.
+        if (_dailyBars is not null && _bandRenderer is not null)
+            _bandRenderer.Update(
+                _dailyBars,
+                LookbackPeriod,
+                RegimeThresholdPct / 100.0,
+                _classifier.CurrentState);
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────
