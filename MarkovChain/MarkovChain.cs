@@ -120,9 +120,12 @@ public partial class MarkovChain : Robot
         // 2. Build transition matrix from base-model state sequence
         _transMatrix.Build(states);
 
-        // 3. Build log-returns for HMM (most recent HistoryBars+1 close prices)
-        double[] closes     = _classifier.GetRecentClosePrices(HistoryBars + 1);
-        double[] logReturns = ComputeLogReturns(closes);
+        // 3. Build rolling log-returns for HMM.
+        //    Each observation = log(close[t] / close[t−HmmWindowDays]).
+        //    We need (HistoryBars + HmmWindowDays) closes so that after windowing
+        //    we still have HistoryBars observations for the HMM.
+        double[] closes     = _classifier.GetRecentClosePrices(HistoryBars + HmmWindowDays);
+        double[] logReturns = ComputeRollingLogReturns(closes, HmmWindowDays);
 
         // 4. Train HMM on log-returns; Decode() sets _hmm.CurrentState via Viterbi
         if (logReturns.Length >= 10)
@@ -151,6 +154,7 @@ public partial class MarkovChain : Robot
         if (DebugMode)
             _logger?.LogDebug(nameof(RunAnalysis),
                 $"Done. Base={_classifier.CurrentState} HMM={_hmm.CurrentState} "
+              + $"(window={HmmWindowDays}d, obs={logReturns.Length}) "
               + $"Signal={_signal.Direction}({_signal.Strength:+0.000;-0.000;0.000}) "
               + $"Accuracy={_hitRate:P1}");
     }
@@ -186,6 +190,34 @@ public partial class MarkovChain : Robot
             double prev = closes[i - 1];
             double curr = closes[i];
             ret[i - 1] = prev > 0 ? Math.Log(curr / prev) : 0.0;
+        }
+        return ret;
+    }
+
+    /// <summary>
+    /// Computes N-day rolling log-returns from close prices (oldest first).
+    /// Each observation[i] = log(closes[i + windowDays] / closes[i]).
+    /// Returns array of length closes.Length − windowDays.
+    ///
+    /// Why rolling returns instead of 1-day returns for the HMM:
+    /// The HMM's Gaussian clusters are calibrated to the distribution of the
+    /// training data. On assets with high volatility (e.g. BTC), 1-day returns
+    /// overlap heavily across regimes, making Bull/Bear/Sideways hard to separate.
+    /// An N-day window acts as a low-pass filter: it accumulates directional drift
+    /// while partially cancelling same-amplitude symmetric noise. The result is
+    /// better cluster separation and a more sensitive regime decoder.
+    /// </summary>
+    private static double[] ComputeRollingLogReturns(double[] closes, int windowDays)
+    {
+        int n = Math.Max(1, windowDays);
+        if (closes.Length <= n) return Array.Empty<double>();
+
+        var ret = new double[closes.Length - n];
+        for (int i = 0; i < ret.Length; i++)
+        {
+            double past = closes[i];
+            double curr = closes[i + n];
+            ret[i] = past > 0 ? Math.Log(curr / past) : 0.0;
         }
         return ret;
     }

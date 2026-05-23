@@ -15,6 +15,15 @@ public partial class MarkovChain : Robot
     [Parameter("Lookback Period (days)", DefaultValue = 20, MinValue = 5, MaxValue = 100, Group = "Data")]
     public int LookbackPeriod { get; set; }
 
+    /// <summary>
+    /// Window size for rolling log-returns fed to the HMM (days).
+    /// Each HMM observation = log(close[t] / close[t−N]).
+    /// Larger values smooth noise and improve trend-direction sensitivity;
+    /// smaller values react faster but include more whipsaw.
+    /// </summary>
+    [Parameter("HMM Window Days", DefaultValue = 5, MinValue = 1, MaxValue = 20, Group = "Data")]
+    public int HmmWindowDays { get; set; }
+
     // ── Forecast ──────────────────────────────────────────────────────────
 
     /// <summary>Number of future days to forecast (1–5).</summary>
