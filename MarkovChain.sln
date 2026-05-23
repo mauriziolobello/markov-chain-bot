@@ -1,0 +1,27 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11819.183 stable
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkovChain", "MarkovChain\MarkovChain.csproj", "{C84F0D08-959A-4210-82DA-087ED0E5B5C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library6", "..\..\Library6\Library6.csproj", "{68C395F4-8E06-86FA-B028-003E124F3446}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C84F0D08-959A-4210-82DA-087ED0E5B5C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C84F0D08-959A-4210-82DA-087ED0E5B5C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C84F0D08-959A-4210-82DA-087ED0E5B5C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C84F0D08-959A-4210-82DA-087ED0E5B5C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68C395F4-8E06-86FA-B028-003E124F3446}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68C395F4-8E06-86FA-B028-003E124F3446}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68C395F4-8E06-86FA-B028-003E124F3446}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68C395F4-8E06-86FA-B028-003E124F3446}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
