@@ -7,8 +7,12 @@ public partial class MarkovChain : Robot
 {
     // ── Data ──────────────────────────────────────────────────────────────
 
-    /// <summary>Number of most-recent daily bars to use for analysis.</summary>
-    [Parameter("History Bars", DefaultValue = 500, MinValue = 100, MaxValue = 2000, Group = "Data")]
+    /// <summary>
+    /// Number of most-recent daily close prices fed to the HMM for training.
+    /// Does NOT limit the regime classifier or the walk-forward backtest —
+    /// both use all available daily bars. Only the HMM observation window is capped here.
+    /// </summary>
+    [Parameter("HMM Training Bars", DefaultValue = 500, MinValue = 100, MaxValue = 2000, Group = "Data")]
     public int HistoryBars { get; set; }
 
     /// <summary>Rolling return window in days for regime classification.</summary>
@@ -81,7 +85,7 @@ public partial class MarkovChain : Robot
     public int MixAlpha { get; set; }
 
     /// <summary>Chart corner where the analytics panel is anchored.</summary>
-    [Parameter("Panel Corner", DefaultValue = PanelCorner.TopRight, Group = "UI")]
+    [Parameter("Panel Corner", DefaultValue = PanelCorner.BottomCenter, Group = "UI")]
     public PanelCorner Corner { get; set; }
 
     /// <summary>
