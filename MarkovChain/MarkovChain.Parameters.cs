@@ -16,6 +16,21 @@ public partial class MarkovChain : Robot
     public int LookbackPeriod { get; set; }
 
     /// <summary>
+    /// Number of most-recent classified bars used to BUILD the transition matrix.
+    /// The classifier still labels all available history (needed for the walk-forward
+    /// backtest), but only this many recent states feed into the 3×3 count matrix.
+    ///
+    /// Why this matters: with 2000 daily bars, BTC history includes the 2019 bear,
+    /// the 2020 crash, and multiple consolidation years. The SIDE persistence inflates
+    /// to 0.90+ because consolidation historically dominates. A shorter window (100–300)
+    /// focuses the matrix on the current market regime, producing actionable forecasts.
+    ///
+    /// Rule of thumb: 100 bars ≈ 5 months · 200 bars ≈ 10 months · 500 bars = full history.
+    /// </summary>
+    [Parameter("Matrix Bars", DefaultValue = 200, MinValue = 50, MaxValue = 2000, Group = "Data")]
+    public int MatrixBars { get; set; }
+
+    /// <summary>
     /// ±Threshold (%) for the rolling-return base model.
     /// Return ≥ +threshold → Bull; ≤ −threshold → Bear; otherwise Sideways.
     /// Equity indices: 5 %. Crypto (BTC/ETH): 10–15 %. Forex majors: 1–3 %.

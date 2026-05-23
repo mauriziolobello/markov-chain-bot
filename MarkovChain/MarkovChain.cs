@@ -117,8 +117,14 @@ public partial class MarkovChain : Robot
             return;
         }
 
-        // 2. Build transition matrix from base-model state sequence
-        _transMatrix.Build(states);
+        // 2. Build transition matrix from the most recent MatrixBars states only.
+        //    The classifier still labels all available history (needed for backtest),
+        //    but the matrix is trained on recent regime structure so that persistent
+        //    historical sideways periods don't dilute the current signal.
+        MarketState[] matrixStates = states.Length > MatrixBars
+            ? states[(states.Length - MatrixBars)..]
+            : states;
+        _transMatrix.Build(matrixStates);
 
         // 3. Build HMM observations.
         //    Base: rolling log-return log(close[t] / close[t−HmmWindowDays]).
@@ -157,7 +163,7 @@ public partial class MarkovChain : Robot
 
         if (DebugMode)
             _logger?.LogDebug(nameof(RunAnalysis),
-                $"Done. Base={_classifier.CurrentState}(thr=±{RegimeThresholdPct}%) "
+                $"Done. Base={_classifier.CurrentState}(thr=±{RegimeThresholdPct}%,matrix={matrixStates.Length}bars) "
               + $"HMM={_hmm.CurrentState}(win={HmmWindowDays}d,norm={HmmNormalize},obs={logReturns.Length}) "
               + $"Signal={_signal.Direction}({_signal.Strength:+0.000;-0.000;0.000}) "
               + $"Accuracy={_hitRate:P1}");

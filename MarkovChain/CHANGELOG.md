@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.3 — 2026-05-23
+- Aggiunto parametro **Matrix Bars** (default 200, range 50–2000, gruppo Data):
+  la matrice di transizione 3×3 viene costruita solo sulle ultime N barre classificate.
+  Il classificatore etichetta comunque tutta la storia disponibile (necessaria per
+  il backtest walk-forward), ma i conteggi di transizione usano solo la finestra recente.
+  Questo elimina la dominanza storica di SIDE (0.93+) causata da anni di consolidamento
+  che diluivano il segnale corrente.
+
 ## 1.0.2 — 2026-05-23
 - Aggiunto parametro **Regime Threshold %** (default 5, range 1–30, gruppo Data):
   configura la soglia ±N% del modello base per asset diversi.
