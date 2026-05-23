@@ -5,16 +5,21 @@ namespace MarkovChainBot;
 
 /// <summary>
 /// Classifies each completed daily bar as Bull, Bear, or Sideways using the
-/// N-day rolling percentage return (threshold ±5 %).
+/// N-day rolling percentage return with a configurable ±threshold.
+///
+/// Default threshold: 5 % (works well for equity indices).
+/// For crypto assets (BTC, ETH) with high daily volatility, raise to 10–20 %.
+/// For Forex majors with low daily volatility, lower to 1–3 %.
+///
+/// Rule of thumb: threshold ≈ 0.5 × (average N-day price swing for the asset).
+///
 /// Index 0 = oldest bar; the forming bar (Bars.Count−1) is always excluded.
 /// </summary>
 public sealed class MarketRegimeClassifier
 {
-    private const double BULL_THRESHOLD =  0.05;
-    private const double BEAR_THRESHOLD = -0.05;
-
     private readonly Bars    _dailyBars;
     private readonly int     _lookbackPeriod;
+    private readonly double  _threshold;   // fractional, e.g. 0.05 = 5 %
     private readonly ILogger _logger;
 
     private MarketState[] _cachedStates = Array.Empty<MarketState>();
@@ -22,11 +27,16 @@ public sealed class MarketRegimeClassifier
     /// <summary>Constructs the classifier.</summary>
     /// <param name="dailyBars">Daily OHLC series loaded via MarketData.GetBars.</param>
     /// <param name="lookbackPeriod">Number of days for the rolling return window.</param>
+    /// <param name="thresholdPct">
+    /// Classification threshold as a whole-number percentage (e.g. 5 = ±5 %).
+    /// Bull ≥ +threshold, Bear ≤ −threshold, Sideways otherwise.
+    /// </param>
     /// <param name="logger">Logger instance.</param>
-    public MarketRegimeClassifier(Bars dailyBars, int lookbackPeriod, ILogger logger)
+    public MarketRegimeClassifier(Bars dailyBars, int lookbackPeriod, double thresholdPct, ILogger logger)
     {
         _dailyBars      = dailyBars;
         _lookbackPeriod = lookbackPeriod;
+        _threshold      = Math.Abs(thresholdPct) / 100.0;   // convert % to fraction
         _logger         = logger;
     }
 
@@ -71,15 +81,16 @@ public sealed class MarketRegimeClassifier
 
             double ret = (currClose - prevClose) / prevClose;
 
-            _cachedStates[i] = ret >= BULL_THRESHOLD ? MarketState.Bull  :
-                                ret <= BEAR_THRESHOLD ? MarketState.Bear  :
-                                                        MarketState.Sideways;
+            _cachedStates[i] = ret >=  _threshold ? MarketState.Bull  :
+                                ret <= -_threshold ? MarketState.Bear  :
+                                                     MarketState.Sideways;
         }
 
         CurrentState = _cachedStates[count - 1];
 
         _logger.LogInformation(nameof(ClassifyAll),
-            $"Classified {count} bars. Current state: {CurrentState}");
+            $"Classified {count} bars. Threshold=±{_threshold:P0} "
+          + $"Current state: {CurrentState}");
 
         return _cachedStates;
     }

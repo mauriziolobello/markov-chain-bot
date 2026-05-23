@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2 — 2026-05-23
+- Aggiunto parametro **Regime Threshold %** (default 5, range 1–30, gruppo Data):
+  configura la soglia ±N% del modello base per asset diversi.
+  Equity/indici: 5%. Crypto (BTC/ETH): 10–15%. Forex: 1–3%.
+- Aggiunto parametro **HMM Normalize (z-score)** (default false, gruppo Data):
+  divide ogni osservazione HMM per la deviazione standard rolling degli ultimi
+  max(20, HmmWindowDays×4) ritorni. Rende l'HMM asset-agnostic: i cluster
+  Bull/Bear/Sideways rappresentano "sopra/sotto/vicino la media" in unità di σ
+  invece di percentuali assolute. Raccomandato ON per crypto.
+- Fix: soglia regime non più hardcodata a ±5% — ora proviene dal nuovo parametro.
+
 ## 1.0.1 — 2026-05-22
 - Aggiunto parametro **HMM Window Days** (default 5, range 1–20) nel gruppo Data.
 - Il modello HMM viene ora addestrato su log-return rolling a N giorni

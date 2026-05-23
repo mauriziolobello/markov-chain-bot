@@ -11,9 +11,17 @@ public partial class MarkovChain : Robot
     [Parameter("History Bars", DefaultValue = 500, MinValue = 100, MaxValue = 2000, Group = "Data")]
     public int HistoryBars { get; set; }
 
-    /// <summary>Rolling return window in days for regime classification (Bull ≥ +5 %, Bear ≤ −5 %).</summary>
+    /// <summary>Rolling return window in days for regime classification.</summary>
     [Parameter("Lookback Period (days)", DefaultValue = 20, MinValue = 5, MaxValue = 100, Group = "Data")]
     public int LookbackPeriod { get; set; }
+
+    /// <summary>
+    /// ±Threshold (%) for the rolling-return base model.
+    /// Return ≥ +threshold → Bull; ≤ −threshold → Bear; otherwise Sideways.
+    /// Equity indices: 5 %. Crypto (BTC/ETH): 10–15 %. Forex majors: 1–3 %.
+    /// </summary>
+    [Parameter("Regime Threshold %", DefaultValue = 5, MinValue = 1, MaxValue = 30, Group = "Data")]
+    public int RegimeThresholdPct { get; set; }
 
     /// <summary>
     /// Window size for rolling log-returns fed to the HMM (days).
@@ -23,6 +31,17 @@ public partial class MarkovChain : Robot
     /// </summary>
     [Parameter("HMM Window Days", DefaultValue = 5, MinValue = 1, MaxValue = 20, Group = "Data")]
     public int HmmWindowDays { get; set; }
+
+    /// <summary>
+    /// When true, each HMM observation is divided by the rolling standard deviation of
+    /// returns over the past max(20, HmmWindowDays×4) bars.
+    /// This converts raw returns to z-scores, making the HMM asset-agnostic:
+    /// Bull/Bear/Sideways clusters represent "above/below/near average volatility"
+    /// rather than absolute percentage moves.
+    /// Recommended ON for crypto; OFF for equity indices.
+    /// </summary>
+    [Parameter("HMM Normalize (z-score)", DefaultValue = false, Group = "Data")]
+    public bool HmmNormalize { get; set; }
 
     // ── Forecast ──────────────────────────────────────────────────────────
 

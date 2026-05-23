@@ -45,7 +45,7 @@ public partial class MarkovChain : Robot
         _dailyBars = MarketData.GetBars(TimeFrame.Daily);
 
         // 4. Compose services — inject only specific dependencies (DIP, per CLAUDE.md)
-        _classifier      = new MarketRegimeClassifier(_dailyBars, LookbackPeriod, _logger);
+        _classifier      = new MarketRegimeClassifier(_dailyBars, LookbackPeriod, RegimeThresholdPct, _logger);
         _transMatrix     = new TransitionMatrix(_logger);
         _hmm             = new GaussianHmm(maxIterations: 100, convergenceThreshold: 1e-6, _logger);
         _forecastEngine  = new ForecastEngine(_transMatrix, _logger);
@@ -120,12 +120,16 @@ public partial class MarkovChain : Robot
         // 2. Build transition matrix from base-model state sequence
         _transMatrix.Build(states);
 
-        // 3. Build rolling log-returns for HMM.
-        //    Each observation = log(close[t] / close[t−HmmWindowDays]).
-        //    We need (HistoryBars + HmmWindowDays) closes so that after windowing
-        //    we still have HistoryBars observations for the HMM.
+        // 3. Build HMM observations.
+        //    Base: rolling log-return log(close[t] / close[t−HmmWindowDays]).
+        //    Optional z-score normalisation: divide each obs by rolling std of
+        //    the last stdWindow daily log-returns to make the model asset-agnostic
+        //    (converts absolute % into "standard deviations from recent mean").
         double[] closes     = _classifier.GetRecentClosePrices(HistoryBars + HmmWindowDays);
         double[] logReturns = ComputeRollingLogReturns(closes, HmmWindowDays);
+
+        if (HmmNormalize && logReturns.Length >= 2)
+            logReturns = NormalizeToZScore(logReturns);
 
         // 4. Train HMM on log-returns; Decode() sets _hmm.CurrentState via Viterbi
         if (logReturns.Length >= 10)
@@ -153,8 +157,8 @@ public partial class MarkovChain : Robot
 
         if (DebugMode)
             _logger?.LogDebug(nameof(RunAnalysis),
-                $"Done. Base={_classifier.CurrentState} HMM={_hmm.CurrentState} "
-              + $"(window={HmmWindowDays}d, obs={logReturns.Length}) "
+                $"Done. Base={_classifier.CurrentState}(thr=±{RegimeThresholdPct}%) "
+              + $"HMM={_hmm.CurrentState}(win={HmmWindowDays}d,norm={HmmNormalize},obs={logReturns.Length}) "
               + $"Signal={_signal.Direction}({_signal.Strength:+0.000;-0.000;0.000}) "
               + $"Accuracy={_hitRate:P1}");
     }
@@ -192,6 +196,45 @@ public partial class MarkovChain : Robot
             ret[i - 1] = prev > 0 ? Math.Log(curr / prev) : 0.0;
         }
         return ret;
+    }
+
+    /// <summary>
+    /// Normalises an array of log-returns to z-scores using a rolling window.
+    /// Each element is divided by the standard deviation of the surrounding
+    /// max(20, 4×HmmWindowDays) observations, making the HMM asset-agnostic.
+    ///
+    /// Why this helps on high-volatility assets (crypto):
+    /// The Gaussian clusters in the HMM are calibrated to the training data.
+    /// On BTC, the "Bear" cluster might be centred at −30 % per 5-day window
+    /// because of historical crashes. A mild −2 % decline falls in Sideways.
+    /// After z-scoring, the clusters become "above/below/near 0 σ", so the
+    /// same mild −2 % decline reads as −1.5 σ in a low-volatility month and
+    /// correctly lands in the Bear cluster for that context.
+    /// </summary>
+    private static double[] NormalizeToZScore(double[] returns)
+    {
+        const double MinStd = 1e-10;
+        int n      = returns.Length;
+        int stdWin = Math.Max(20, n / 4);   // rolling std window: at least 20 bars
+        var result = new double[n];
+
+        for (int i = 0; i < n; i++)
+        {
+            int from  = Math.Max(0, i - stdWin + 1);
+            int count = i - from + 1;
+
+            // Compute mean and std over [from..i]
+            double sum = 0;
+            for (int k = from; k <= i; k++) sum += returns[k];
+            double mean = sum / count;
+
+            double var = 0;
+            for (int k = from; k <= i; k++) { double d = returns[k] - mean; var += d * d; }
+            double std = count > 1 ? Math.Sqrt(var / (count - 1)) : MinStd;
+
+            result[i] = std > MinStd ? returns[i] / std : 0.0;
+        }
+        return result;
     }
 
     /// <summary>
